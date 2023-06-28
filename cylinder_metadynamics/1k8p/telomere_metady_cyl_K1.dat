@@ -1,0 +1,87 @@
+UNITS LENGTH=A # modify the default length unit (nm) to Angstrom
+
+WHOLEMOLECULES ENTITY0=1-1452,38456     # atoms of receptor and ligand
+FIT_TO_TEMPLATE REFERENCE=1k8p_tetradcore.pdb TYPE=OPTIMAL # pdb with reference atoms to fit
+
+
+#######################################3
+# Defining groups and binding site
+Klig: GROUP ATOMS=38456    # K bulk ion that will serve as ligand
+K1: GROUP ATOMS=1453       # K1 ion that will serve as binding site reference
+K2: GROUP ATOMS=1455       # K2 ion that will serve as binding site reference
+
+tetrad1: GROUP ATOMS=128-155,491-518,854-881,1217-1244    # GUA base atoms
+tetrad2: GROUP ATOMS=190-217,553-580,916-943,1279-1306    # GUA base atoms
+tetrad3: GROUP ATOMS=252-279,615-642,978-1005,1341-1368   # GUA base atoms
+
+site1: COM ATOMS=tetrad3,tetrad2        # region of K1 ion that will serve as binding site reference
+site2: COM ATOMS=tetrad1,tetrad2        # region of K2 ion that will serve as binding site reference
+
+KBULK: GROUP ATOMS=38392,38394,38396,38398,38400,38402,38404,38406,38408,38410,38412,38414,38416,38418,38420,38422,38424,38426,38428,38430,38432,38434,38436,38438,38440,38442,38444,38446,38448,38450,38452,38454,38458,38460,38462,38464,38466,38468,38470,38472 # not Klig
+
+check_site1: DISTANCE ATOMS=K1,site1
+check_site2: DISTANCE ATOMS=K2,site2
+
+WRAPAROUND ATOMS=Klig AROUND=tetrad1,tetrad2,tetrad3
+
+#######################################
+# Creating KBULK binding restraints to K2
+
+mindist1: DISTANCES GROUPA=K1 GROUPB=KBULK LOWEST
+repulsivewall1: LOWER_WALLS ARG=mindist1.lowest AT=6.0 KAPPA=2000.0 EXP=2 EPS=1 OFFSET=0
+
+mindist2: DISTANCES GROUPA=K2 GROUPB=KBULK LOWEST
+repulsivewall2: LOWER_WALLS ARG=mindist2.lowest AT=6.0 KAPPA=2000.0 EXP=2 EPS=1 OFFSET=0
+
+#######################################
+# Build the cylinder using site1 and Klig coordinates
+
+Klig_coord: POSITION ATOM=Klig NOPBC
+site1_coord: POSITION ATOM=site1 NOPBC
+
+# calculating the distance from site1 to Klig
+d1: DISTANCE ATOMS=Klig,site1 COMPONENTS
+
+# distances for each cartesian component
+abs_x: MATHEVAL ARG=Klig_coord.x,site1_coord.x FUNC=x-y PERIODIC=NO
+abs_y: MATHEVAL ARG=Klig_coord.y,site1_coord.y FUNC=x-y PERIODIC=NO
+abs_z: MATHEVAL ARG=Klig_coord.z,site1_coord.z FUNC=x-y PERIODIC=NO
+
+# Defining cylinder via descriptive coordinates
+rho: MATHEVAL ARG=abs_x,abs_y FUNC=sqrt(x*x+y*y) PERIODIC=NO
+phi: MATHEVAL ARG=abs_x,abs_y FUNC=atan2(y,x) PERIODIC=-pi,pi
+
+# restraining cylinder lateral size
+cylrestr1: UPPER_WALLS ARG=rho AT=7.0 KAPPA=5000        # this controls the maximum cylinder radius - 0.7 nm in this case
+
+# restraining K1 to transpass the cylinder ceiling
+cylrestr2: LOWER_WALLS ARG=d1.z AT=1.5 KAPPA=2500       # this controls the maximum cylinder height. IMPORTANT: if your binding site is at a negative Z region, this must be a LOWER_WALLs. For positive Z regions, change this to UPPER_WALLS.
+
+cylrestr3: UPPER_WALLS ARG=d1.z AT=22.0 KAPPA=2500      # this controls the minimum cylinder height. IMPORTANT: if your binding site is at a negative Z region, this must be a UPPER_WALLs. For positive Z regions, change this to LOWER_WALLS.
+
+########################################
+# Defining CV and metadynamics procedures
+
+d1real: DISTANCE ATOMS=Klig,K1
+d1real_xyz: DISTANCE ATOMS=Klig,K1 COMPONENTS
+
+thetax: MATHEVAL ARG=abs_x,d1real FUNC=asin(x/y)*(180/pi) PERIODIC=NO
+thetay: MATHEVAL ARG=abs_y,d1real FUNC=asin(x/y)*(180/pi) PERIODIC=NO
+
+
+metad: METAD ARG=d1.z,rho,phi SIGMA=0.5,0.5,pi/8. HEIGHT=1.0 PACE=500 FILE=HILLS_CYL GRID_MIN=0.0,0.0,-pi GRID_MAX=25.0,10.0,pi BIASFACTOR=5 CALC_RCT TEMP=298
+
+########################################
+# Printing arguments
+PRINT ARG=* STRIDE=1000 FILE=COLVAR_CYL
+PRINT ARG=d1.z,d1real,d1real_xyz.z FILE=distance.dat STRIDE=1000
+PRINT ARG=metad.* FILE=metad_data.dat STRIDE=1000
+PRINT ARG=cylrestr1.*,cylrestr2.*,cylrestr3.* FILE=cylinder_restraint.dat STRIDE=1000
+PRINT ARG=mindist1.lowest,repulsivewall1.*,mindist2.lowest,repulsivewall2.* FILE=repulsivewalls.dat STRIDE=1000
+PRINT ARG=abs_x,abs_y,abs_z FILE=xyz_coord.dat STRIDE=1000
+PRINT ARG=rho,d1.z,phi FILE=rdp_coord.dat STRIDE=1000
+PRINT ARG=thetax,thetay FILE=angles.dat STRIDE=1000
+PRINT ARG=check_site1,check_site2 FILE=check_site.dat STRIDE=1000
+DUMPATOMS STRIDE=1000 FILE=lig_coords.gro ATOMS=Klig
+
+FLUSH STRIDE=1000

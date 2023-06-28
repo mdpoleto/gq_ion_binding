@@ -1,0 +1,28 @@
+RESTART
+UNITS LENGTH=A # modify the default length unit (nm) to Angstrom
+
+# TERRA GQ
+#########################################
+# PDB NUMBERING MUST BE USED HERE
+# K1 = 1517 (pdb numbering)
+# K2 = 1519 (pdb numbering)
+# Kbulk = 35596-35655 (remove drude particles from list!) (pdb numbering)
+#########################################
+
+#########################################
+# Defining groups and lower_walls
+K1: GROUP ATOMS=1517
+K2: GROUP ATOMS=1519
+KBULK: GROUP ATOMS=35596,35598,35600,35602,35604,35606,35608,35610,35612,35614,35616,35618,35620,35622,35624,35626,35628,35630,35632,35634,35636,35638,35640,35642,35644,35646,35648,35650,35652,35654
+
+
+d1: DISTANCES GROUPA=K1 GROUPB=KBULK LOWEST
+d2: DISTANCES GROUPA=K2 GROUPB=KBULK LOWEST
+d3: DISTANCES GROUPA=K1 GROUPB=K2 LOWEST
+
+lwall1: LOWER_WALLS ARG=d1.lowest AT=5.5 KAPPA=2000.0 EXP=2 EPS=1 OFFSET=0
+lwall2: LOWER_WALLS ARG=d2.lowest AT=5.5 KAPPA=2000.0 EXP=2 EPS=1 OFFSET=0
+#########################################
+
+PRINT STRIDE=1000 ARG=* FILE=COLVAR
+PRINT STRIDE=1000 ARG=d1.lowest,d2.lowest,d3.lowest FILE=mindist.dat

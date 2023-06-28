@@ -1,0 +1,27 @@
+RESTART
+UNITS LENGTH=A # modify the default length unit (nm) to Angstrom
+
+# TELOMERE GQ
+#########################################
+# PDB NUMBERING MUST BE USED HERE
+# K1 = 1453 (pdb numbering)
+# K22 = 1455 (pdb numbering)
+# Kbulk = 38392-38473 (remove drude particles from list!) (pdb numbering)
+#########################################
+
+#########################################
+# Defining groups and lower_walls
+K1: GROUP ATOMS=1453
+K2: GROUP ATOMS=1455
+KBULK: GROUP ATOMS=38392,38394,38396,38398,38400,38402,38404,38406,38408,38410,38412,38414,38416,38418,38420,38422,38424,38426,38428,38430,38432,38434,38436,38438,38440,38442,38444,38446,38448,38450,38452,38454,38456,38458,38460,38462,38464,38466,38468,38470,38472
+
+d1: DISTANCES GROUPA=K1 GROUPB=KBULK LOWEST
+d2: DISTANCES GROUPA=K2 GROUPB=KBULK LOWEST
+d3: DISTANCES GROUPA=K1 GROUPB=K2 LOWEST
+
+lwall1: LOWER_WALLS ARG=d1.lowest AT=5.5 KAPPA=2000.0 EXP=2 EPS=1 OFFSET=0
+lwall2: LOWER_WALLS ARG=d2.lowest AT=5.5 KAPPA=2000.0 EXP=2 EPS=1 OFFSET=0
+#########################################
+
+PRINT STRIDE=1000 ARG=* FILE=COLVAR
+PRINT STRIDE=1000 ARG=d1.lowest,d2.lowest,d3.lowest FILE=mindist.dat
