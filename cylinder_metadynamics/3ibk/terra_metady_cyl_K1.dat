@@ -25,7 +25,8 @@ check_site2: DISTANCE ATOMS=K2,site2
 WRAPAROUND ATOMS=Klig AROUND=tetrad1,tetrad2,tetrad3
 
 #######################################
-# Creating KBULK binding restraints to K2
+# Creating KBULK binding restraints to K1 and K2
+# to prevent ion binding competition
 
 mindist1: DISTANCES GROUPA=K1 GROUPB=KBULK LOWEST
 repulsivewall1: LOWER_WALLS ARG=mindist1.lowest AT=6.0 KAPPA=2000.0 EXP=2 EPS=1 OFFSET=0
@@ -52,12 +53,11 @@ rho: MATHEVAL ARG=abs_x,abs_y FUNC=sqrt(x*x+y*y) PERIODIC=NO
 phi: MATHEVAL ARG=abs_x,abs_y FUNC=atan2(y,x) PERIODIC=-pi,pi
 
 # restraining cylinder lateral size
-cylrestr1: UPPER_WALLS ARG=rho AT=7.0 KAPPA=5000        # this controls the maximum cylinder radius - 0.7 nm in this case
+cylrestr1: UPPER_WALLS ARG=rho AT=7.0 KAPPA=5000        # controls the maximum cylinder radius - 0.7 nm in this case
 
-# restraining K1 to transpass the cylinder ceiling
-cylrestr2: LOWER_WALLS ARG=d1.z AT=1.5 KAPPA=2500       # this controls the maximum cylinder height. IMPORTANT: if your binding site is at a negative Z region, this must be a LOWER_WALLs. For positive Z regions, change this to UPPER_WALLS.
-
-cylrestr3: UPPER_WALLS ARG=d1.z AT=22.0 KAPPA=2500      # this controls the minimum cylinder height. IMPORTANT: if your binding site is at a negative Z region, this must be a UPPER_WALLs. For positive Z regions, change this to LOWER_WALLS.
+# restraining K1 from transpassing the cylinder heights
+cylrestr2: LOWER_WALLS ARG=d1.z AT=1.5  KAPPA=2500      # controls the maximum cylinder height. IMPORTANT - this must be a LOWER_WALLs if your binding site is at a negative Z region
+cylrestr3: UPPER_WALLS ARG=d1.z AT=22.0 KAPPA=2500      # controls the minimum cylinder height. IMPORTANT - this must be a UPPER_WALLs if your binding site is at a negative Z region
 
 ########################################
 # Defining CV and metadynamics procedures
