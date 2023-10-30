@@ -1,6 +1,6 @@
 # gq_ion_binding
 
- Plumed inputs used in the paper "Differences in Conformational Sampling and Intrinsic Electric Fields Drive Ion Binding in Telomeric and TERRA G-Quadruplexes" by Marcelo D. Polêto and Justin A. Lemkul.
+Plumed inputs used in the paper ["Differences in Conformational Sampling and Intrinsic Electric Fields Drive Ion Binding in Telomeric and TERRA G-Quadruplexes"](https://pubs.acs.org/doi/full/10.1021/acs.jcim.3c01305) by Marcelo D. Polêto and Justin A. Lemkul.
 
 Citation:
 ```
